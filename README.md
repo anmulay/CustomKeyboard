@@ -40,7 +40,7 @@ This research is based upon work supported by NSF grant IIS-1909845 and a Google
 
 <b>6.Tap Listener:</b> Action listerner to map the physical gestures to corresponding keyflow actions
 
-<b>7.
+<b>7.MyInputMethodService:</b> Android Service to enable keyflow implementation at system level. Keyflow is available to any installed application. The Text entry through TextView can be performed using Keyflow.
 
 <b>8.Keyflow Modes:</b> Modularized definitions and action for alphabets, numbers and special characters
 
