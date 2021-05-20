@@ -6,9 +6,8 @@ public class TypedString {
     String alreadyTyped;
     String word;
 
-    public void typedStringInitialise()
-    {
-        alreadyTyped="";
+    public void typedStringInitialise() {
+        alreadyTyped = "";
         //word="";
     }
 
