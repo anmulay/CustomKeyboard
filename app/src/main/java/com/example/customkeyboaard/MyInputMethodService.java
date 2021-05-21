@@ -30,6 +30,7 @@ import com.tapwithus.sdk.bluetooth.BluetoothManager;
 import com.tapwithus.sdk.bluetooth.TapBluetoothManager;
 import com.tapwithus.sdk.mouse.MousePacket;
 
+import java.util.ArrayList;
 import java.util.Locale;
 
 public class MyInputMethodService extends InputMethodService implements KeyboardView.OnKeyboardActionListener, TextToSpeech.OnInitListener {
@@ -45,8 +46,15 @@ public class MyInputMethodService extends InputMethodService implements Keyboard
     static boolean isspecialCharMode = false;
     static int spModeToggle = 0;
     static boolean isAutoSuggestionMode = false;
+    static int autoSuggestionModeToggle = 0;
     static int edModeToggle = 0;
     InputConnection inputConnection;
+
+    // Auto suggestion mode variables
+    String str1 = "";
+    String[] splited;
+    ArrayList<String> SuggestionsResult = new ArrayList<String>();
+
 
     @Override
     public View onCreateInputView() {
@@ -136,6 +144,7 @@ public class MyInputMethodService extends InputMethodService implements Keyboard
         NumbersMode nmMode = new NumbersMode(MyInputMethodService.this);
         SpecialCharactersMode specialCharMode = new SpecialCharactersMode(MyInputMethodService.this);
         EditMode edMode = new EditMode(MyInputMethodService.this);
+        AutoSuggestionMode autoSuggestionsMode = new AutoSuggestionMode();           // Instantiate AutoSuggestion Mode
 
         @Override
         public void onBluetoothTurnedOn() {
@@ -373,6 +382,60 @@ public class MyInputMethodService extends InputMethodService implements Keyboard
             //SpeakOut in EditMode
             else if (allowSearchScan & isNumberMode == false & isDatabaseMode == false & isspecialCharMode == false & isAutoSuggestionMode == false & data == 30) {
                 edMode.edModeSpeakOut(tts, tyString.alreadyTyped/*+" "+tyString.word*/);
+            }
+
+            /*////////////////////////////////////////
+            /////////// Auto Suggestion MODE ////////////////
+            ////////////////////////////////////////*/
+
+            else if (!allowSearchScan & isNumberMode == false & numberModeToggle == 0 & isspecialCharMode == false & isAutoSuggestionMode == false & autoSuggestionModeToggle == 0 & data == 9) {
+                if (tyString.alreadyTyped.length() == 0) {
+                    tts.speak("Nothing typed No Autosuggestions ", TextToSpeech.QUEUE_FLUSH, null, null);
+                } else {
+                    String str = tyString.alreadyTyped;
+                    splited = str.split("\\s+");
+                    str1 = splited[splited.length - 1];
+                    SuggestionsResult = autoSuggestionsMode.fetchAutoSuggestions(getApplicationContext(), tts, str1);
+                    if (SuggestionsResult != null) {
+                        isAutoSuggestionMode = true;
+                    }
+                }
+
+                //countTotalTaps.performCounting("autoSuggestionModeFetch");
+            } else if (!allowSearchScan & isNumberMode == false & numberModeToggle == 0 & isspecialCharMode == false & isAutoSuggestionMode == true & autoSuggestionModeToggle == 1 & data == 9) {
+                tts.speak("Exit AutoSuggestions Mode ", TextToSpeech.QUEUE_FLUSH, null, null);
+                isAutoSuggestionMode = false;
+                autoSuggestionModeToggle = 0;
+
+                //countTotalTaps.performCounting("autoSuggestionModeExit");
+            } else if (!allowSearchScan & isNumberMode == false & numberModeToggle == 0 & isspecialCharMode == false & isAutoSuggestionMode == true & autoSuggestionModeToggle == 1 & data == 2) // Forward Navigation in AutoSuggestion Mode
+            {
+                autoSuggestionsMode.forwardNavigateSuggestions(tts, SuggestionsResult);
+
+                //countTotalTaps.performCounting("autoSuggestionModeForwardNav");
+            } else if (!allowSearchScan & isNumberMode == false & numberModeToggle == 0 & isspecialCharMode == false & isAutoSuggestionMode == true & autoSuggestionModeToggle == 1 & data == 1)//Selection in AutoSuggestion Mode
+            {
+                String word = autoSuggestionsMode.selectAutoSuggestion(tts);
+
+                if (tyString.alreadyTyped.contains(" ")) {
+                    tyString.alreadyTyped = "";
+
+                    String temp = "";
+                    for (int i = 0; i < splited.length - 1; i++) {
+                        if (temp.equals("")) {
+                            temp = temp + splited[i];
+                            continue;
+                        }
+                        temp = temp + " " + splited[i];
+                    }
+                    tyString.alreadyTyped = temp + " " + word;
+                } else {
+                    tyString.alreadyTyped = word;
+                }
+
+                Log.d("TypedString", tyString.alreadyTyped);
+
+                //countTotalTaps.performCounting("autoSuggestionModeSelection");
             }
         }
 
